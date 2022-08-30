@@ -3,6 +3,8 @@ from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.keys import Keys
 from time import sleep
 
+PATH = "geckodriver.exe"
+
 HUMBLE_URL = "https://humblebundle.com/"
 SUBSCRIPTION_URL = HUMBLE_URL + "/subscription/home"
 LOGIN_BTN_XPATH = "//a[contains(@class, 'js-account-login')]"
@@ -13,14 +15,14 @@ VERICIATION_CODE_XPATH = "//input[@name='code']"
 USER_AVATAR_BTN_XPATH = "//button[contains(@class, 'js-user-item-dropdown-toggle')]"
 SEE_MORE_MONTHS_BTN_XPATH = "//a[contains(@class, 'see-more-months')]"
 HUMBLE_CHOICE_LINKS = "//span[contains(@class, 'choices-claimed-or-remaining')]/a"
-HUMBLE_CHOICE_GAME_TITLE_XPATH = "//span[@class='content-choice-title']"
+HUMBLE_CHOICE_GAME_TITLE_XPATH = "//div[@class=\"content-choice\"]//div[@class='content-choice-title']"
 HUMBLE_CHOICE_MONTH_XPATH = "//h3[@class='content-choices-title']"
 HUMBLE_MONTHLY_LINKS = "//a[@class='previous-month-product-link-header']"
 HUMBLE_MONTHLY_GAME_XPATH = "//a[contains(@class, 'section-name')]"
 
 class HumbleRetriever:
     def __init__(self):
-        self.driver = webdriver.Firefox()
+        self.driver = webdriver.Firefox(executable_path=PATH)
         self.driver.get(HUMBLE_URL)
         self.driver.implicitly_wait(10) # seconds
         self.games = {}
@@ -38,11 +40,12 @@ class HumbleRetriever:
     def list_all_games(self, username, password):
         self.login(username, password)
         self.navigate_to_humble_choice()
+        self.get_main_page_games()
         self.expand_game_months()
         self.retrieve_humble_choice_games()
-        self.retrieve_humble_monthly_games()
-        self.save_games("all_games.txt")
-        self.save_as_html("all_games.html")
+        # self.retrieve_humble_monthly_games()
+        # self.save_games("all_games.txt")
+        # self.save_as_html("all_games.html")
 
     def print_games(self):
         for month in self.games:
@@ -126,7 +129,7 @@ class HumbleRetriever:
         """
         Returns a list of the humble choice links on the page
         """
-        return self.driver.find_elements_by_xpath(HUMBLE_CHOICE_LINKS)
+        return self.driver.find_elements_by_xpath("//a[@class=\"content-choices-footer js-previous-month-link\"]")
 
     def click_element_new_tab(self, element):
         """
@@ -189,3 +192,13 @@ class HumbleRetriever:
             self.games[month] = titles
             self.driver.close()
             self._switch_to_window_index(0)
+
+    def get_main_page_games(self):
+        month = self.driver.find_element_by_xpath("//h3[@class=\"content-choices-title\"]").text
+        titles = self.driver.find_elements_by_xpath("//section[@class=\"active-content-section full-span\"]//div[@class=\"content-choice\"]//div[@class=\"content-choice-title\"]")
+        games = []
+            
+        for title in titles:
+            games.append(title.text)
+            self.games[month] = games
+        print(self.games)
