@@ -7,6 +7,7 @@ PATH = "geckodriver.exe"
 
 HUMBLE_URL = "https://humblebundle.com/"
 SUBSCRIPTION_URL = HUMBLE_URL + "/subscription/home"
+KEY_URL = HUMBLE_URL + "/home/keys"
 LOGIN_BTN_XPATH = "//a[contains(@class, 'js-account-login')]"
 USERNAME_INPUT_XPATH = "//input[@name='username']"
 PASSWORD_INPUT_XPATH = "//input[@name='password']"
@@ -39,6 +40,8 @@ class HumbleRetriever:
 
     def list_all_games(self, username, password):
         self.login(username, password)
+        self.navigate_to_key_page()
+        self.get_unredeemed_key_games()
         self.navigate_to_humble_choice()
         self.get_main_page_games()
         self.expand_game_months()
@@ -202,3 +205,24 @@ class HumbleRetriever:
             games.append(title.text)
             self.games[month] = games
         print(self.games)
+
+    def navigate_to_key_page(self):
+        self.driver.get(KEY_URL)
+
+    def get_unredeemed_key_games(self):
+        sleep(15)
+        checkbox = self._get_element("//input[@id=\"hide-redeemed\"]")
+        checkbox.click()
+        games = []
+
+        while(True):
+            next_button = self._get_element("//div[@class=\"pagination\"]//div[contains(@class, \"jump-to-page\")][last()]")
+            if next_button.text:
+                break
+            title_spans = self.driver.find_elements_by_xpath("//tbody//tr[not(contains(@class, \"key-manager-choice-row\"))]//td[@class=\"game-name\"]//h4")
+            title_spans = title_spans + self.driver.find_elements_by_xpath("//tbody//tr[not(contains(@class, \"key-manager-choice-row\"))]//td[@class=\"game-name\"]//h4[@title]")
+            for title in title_spans:
+                games.append(title.text)
+            next_button.click()
+
+        self.games['keys'] = games
